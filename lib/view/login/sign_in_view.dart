@@ -1,8 +1,9 @@
 import 'dart:convert';
 
 import 'package:book_grocer/common/color_extenstion.dart';
+import 'package:book_grocer/view/home/home_view.dart'; // Add this import for HomeView
 import 'package:book_grocer/view/login/forgot_password_view.dart';
-import 'package:book_grocer/view/login/sign_up_view.dart'; // Add this import for SignUpView
+import 'package:book_grocer/view/login/sign_up_view.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -81,8 +82,12 @@ class _SignInViewState extends State<SignInView> {
           ),
         );
 
-        // Navigate to home screen (replace with your home screen)
-        // Navigator.pushReplacementNamed(context, '/home');
+        // Navigate to HomeView after successful login
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const HomeView()),
+          (route) => false, // This removes all previous routes
+        );
       } else {
         // Handle error response
         String errorMessage = 'Login failed';

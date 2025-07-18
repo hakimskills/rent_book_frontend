@@ -2,14 +2,13 @@ import 'package:book_grocer/common/color_extenstion.dart';
 import 'package:book_grocer/view/book_reading/book_reading_view.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../common_widget/best_seller_cell.dart';
 import '../../common_widget/genres_cell.dart';
 import '../../common_widget/recently_cell.dart';
-import '../../common_widget/round_button.dart';
-import '../../common_widget/round_textfield.dart';
+import '../../common_widget/show_guest_dialog.dart';
 import '../../common_widget/top_picks_cell.dart';
-import '../login/sign_up_view.dart';
 import '../main_tab/main_tab_view.dart';
 
 class HomeView extends StatefulWidget {
@@ -20,10 +19,6 @@ class HomeView extends StatefulWidget {
 }
 
 class _HomeViewState extends State<HomeView> {
-
-  TextEditingController txtName = TextEditingController();
-  TextEditingController txtEmail = TextEditingController();
-
   List topPicksArr = [
     {
       "name": "The Dissapearance of Emila Zola",
@@ -69,11 +64,11 @@ class _HomeViewState extends State<HomeView> {
       "img": "assets/img/g1.png",
     },
     {
-      "name": "Graphic Novels",
+      "name": "Fiction",
       "img": "assets/img/g1.png",
     },
     {
-      "name": "Graphic Novels",
+      "name": "History",
       "img": "assets/img/g1.png",
     }
   ];
@@ -95,6 +90,17 @@ class _HomeViewState extends State<HomeView> {
       "img": "assets/img/12.jpg"
     }
   ];
+
+  Future<void> handleProtectedAction(VoidCallback onSuccess) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('auth_token');
+
+    if (token == null) {
+      showSignInRequiredDialog(context);
+    } else {
+      onSuccess();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -126,30 +132,26 @@ class _HomeViewState extends State<HomeView> {
                   mainAxisAlignment: MainAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    SizedBox(
-                      height: media.width * 0.1,
-                    ),
+                    SizedBox(height: media.width * 0.1),
                     AppBar(
                       backgroundColor: Colors.transparent,
                       elevation: 0,
-                      title: Row(children: const [
-                        Text(
-                          "Our Top Picks",
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 22,
-                              fontWeight: FontWeight.w700),
-                        )
-                      ]),
+                      title: const Text(
+                        "Our Top Picks",
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 22,
+                            fontWeight: FontWeight.w700),
+                      ),
                       leading: Container(),
                       leadingWidth: 1,
                       actions: [
                         IconButton(
-                            onPressed: () {
-
-                                sideMenuScaffoldKey.currentState?.openEndDrawer();
-
-                            }, icon: const Icon(Icons.menu))
+                          onPressed: () {
+                            sideMenuScaffoldKey.currentState?.openEndDrawer();
+                          },
+                          icon: const Icon(Icons.menu),
+                        )
                       ],
                     ),
                     SizedBox(
@@ -157,12 +159,9 @@ class _HomeViewState extends State<HomeView> {
                       height: media.width * 0.8,
                       child: CarouselSlider.builder(
                         itemCount: topPicksArr.length,
-                        itemBuilder: (BuildContext context, int itemIndex,
-                            int pageViewIndex) {
+                        itemBuilder: (context, itemIndex, _) {
                           var iObj = topPicksArr[itemIndex] as Map? ?? {};
-                          return TopPicksCell(
-                            iObj: iObj,
-                          );
+                          return TopPicksCell(iObj: iObj);
                         },
                         options: CarouselOptions(
                           autoPlay: false,
@@ -174,181 +173,98 @@ class _HomeViewState extends State<HomeView> {
                         ),
                       ),
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: Row(children: [
-                        Text(
-                          "Bestsellers",
-                          style: TextStyle(
-                              color: TColor.text,
-                              fontSize: 22,
-                              fontWeight: FontWeight.w700),
-                        )
-                      ]),
-                    ),
+                    sectionTitle("Bestsellers"),
                     SizedBox(
                       height: media.width * 0.9,
                       child: ListView.builder(
-                          padding: const EdgeInsets.symmetric(
-                              vertical: 15, horizontal: 8),
-                          scrollDirection: Axis.horizontal,
-                          itemCount: bestArr.length,
-                          itemBuilder: ((context, index) {
-                            var bObj = bestArr[index] as Map? ?? {};
-
-                            return GestureDetector(
-                              onTap: (){
-                                Navigator.push(context, MaterialPageRoute(builder: (context) => BookReadingView(bObj: bObj,) ) );
-                              },
-                              child: BestSellerCell(
-                                bObj: bObj,
-                              ),
-                            );
-                          })),
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 15, horizontal: 8),
+                        scrollDirection: Axis.horizontal,
+                        itemCount: bestArr.length,
+                        itemBuilder: (context, index) {
+                          var bObj = bestArr[index] as Map? ?? {};
+                          return GestureDetector(
+                            onTap: () {
+                              handleProtectedAction(() {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        BookReadingView(bObj: bObj),
+                                  ),
+                                );
+                              });
+                            },
+                            child: BestSellerCell(bObj: bObj),
+                          );
+                        },
+                      ),
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: Row(children: [
-                        Text(
-                          "Genres",
-                          style: TextStyle(
-                              color: TColor.text,
-                              fontSize: 22,
-                              fontWeight: FontWeight.w700),
-                        )
-                      ]),
-                    ),
+                    sectionTitle("Genres"),
                     SizedBox(
                       height: media.width * 0.6,
                       child: ListView.builder(
-                          padding: const EdgeInsets.symmetric(
-                              vertical: 15, horizontal: 8),
-                          scrollDirection: Axis.horizontal,
-                          itemCount: genresArr.length,
-                          itemBuilder: ((context, index) {
-                            var bObj = genresArr[index] as Map? ?? {};
-
-                            return GenresCell(
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 15, horizontal: 8),
+                        scrollDirection: Axis.horizontal,
+                        itemCount: genresArr.length,
+                        itemBuilder: (context, index) {
+                          var bObj = genresArr[index] as Map? ?? {};
+                          return GestureDetector(
+                            onTap: () {
+                              handleProtectedAction(() {
+                                // Example action after login
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content:
+                                        Text("Genre selected: ${bObj['name']}"),
+                                  ),
+                                );
+                              });
+                            },
+                            child: GenresCell(
                               bObj: bObj,
                               bgcolor: index % 2 == 0
                                   ? TColor.color1
                                   : TColor.color2,
-                            );
-                          })),
+                            ),
+                          );
+                        },
+                      ),
                     ),
-                    SizedBox(
-                      height: media.width * 0.1,
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: Row(children: [
-                        Text(
-                          "Recently Viewed",
-                          style: TextStyle(
-                              color: TColor.text,
-                              fontSize: 22,
-                              fontWeight: FontWeight.w700),
-                        )
-                      ]),
-                    ),
+                    SizedBox(height: media.width * 0.1),
+                    sectionTitle("Recently Viewed"),
                     SizedBox(
                       height: media.width * 0.7,
                       child: ListView.builder(
-                          padding: const EdgeInsets.symmetric(
-                              vertical: 15, horizontal: 8),
-                          scrollDirection: Axis.horizontal,
-                          itemCount: recentArr.length,
-                          itemBuilder: ((context, index) {
-                            var bObj = recentArr[index] as Map? ?? {};
-
-                            return RecentlyCell(
-                              iObj: bObj,
-                            );
-                          })),
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 15, horizontal: 8),
+                        scrollDirection: Axis.horizontal,
+                        itemCount: recentArr.length,
+                        itemBuilder: (context, index) {
+                          var bObj = recentArr[index] as Map? ?? {};
+                          return RecentlyCell(iObj: bObj);
+                        },
+                      ),
                     ),
-                    SizedBox(
-                      height: media.width * 0.1,
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: Row(children: [
-                        Text(
-                          "Monthly Newsletter",
-                          style: TextStyle(
-                              color: TColor.text,
-                              fontSize: 22,
-                              fontWeight: FontWeight.w700),
-                        )
-                      ]),
-                    ),
-                    
-                    Container(
-                      width: double.maxFinite,
-                      margin: const EdgeInsets.symmetric(
-                          vertical: 20, horizontal: 20),
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 15, horizontal: 15),
-                      decoration: BoxDecoration(
-                          color: TColor.textbox.withOpacity(0.4),
-                          borderRadius: BorderRadius.circular(15)),
-                      child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "Receive our monthly newsletter and receive updates on new stock, books and the occasional promotion.",
-                              style: TextStyle(
-                                color: TColor.subTitle,
-                                fontSize: 12,
-                              ),
-                            ),
-
-                             const SizedBox(
-                              height: 15,
-                            ),
-
-                             RoundTextField(
-                              controller: txtName,
-                              hintText: "Name",
-                            ),
-                            const SizedBox(
-                              height: 15,
-                            ),
-                            RoundTextField(
-                              controller: txtEmail,
-                              hintText: "Email Address",
-                            ),
-
-                            const SizedBox(
-                              height: 15,
-                            ),
-
-                            Row(mainAxisAlignment: MainAxisAlignment.end,children: [
-                              MiniRoundButton(title: "Sign Up", onPressed: 
-                              (){
-                                 Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                            builder: (context) =>
-                                                const SignUpView()));
-                              }, )
-                            ],)
-
-
-                          ]),
-                    ),
-                  
-
-
-                     SizedBox(
-                      height: media.width * 0.1,
-                    ),
-
                   ],
                 )
               ],
             )
           ],
         ),
+      ),
+    );
+  }
+
+  Widget sectionTitle(String title) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      alignment: Alignment.centerLeft,
+      child: Text(
+        title,
+        style: TextStyle(
+            color: TColor.text, fontSize: 22, fontWeight: FontWeight.w700),
       ),
     );
   }
